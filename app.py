@@ -94,7 +94,8 @@ else:
     menu = {}
 
 if menu:
-    tabs = st.tabs(menu.keys())
+    category_list = list(menu.keys()) 
+    tabs = st.tabs(category_list)
     for i, category in enumerate(menu.keys()):
         with tabs[i]:
             st.subheader(f"😋 {category}")

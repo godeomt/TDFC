@@ -122,59 +122,79 @@ if menu:
 st.divider()
 st.subheader("🛒 장바구니")
 
-# 장바구니에 아이템이 있을 때만 표시
 if len(st.session_state['cart']) > 0:
     total_price = 0
     order_text = ""
     
-    # 장바구니 목록 출력
     for idx, item in enumerate(st.session_state['cart']):
         item_total = item['price'] * item['qty']
         total_price += item_total
         st.write(f"- {item['name']} x {item['qty']}개 ({item_total}원)")
         order_text += f"{item['name']} {item['qty']}개, "
     
-    # 총 금액 저장 및 출력
     st.session_state['total_price'] = total_price
     st.write(f"**💰 총 금액: {total_price}원**")
     
-    # 주문 버튼
+    # 👇 [추가 1] 주문 요청사항 입력칸 (1줄짜리)
+    request_msg = st.text_input("📝 주문 요청사항 (선택)", placeholder="예: 덜 맵게 해주세요, 얼음 많이 주세요")
+    
     if st.button("🚀 주문 전송하기", type="primary"):
         final_order_text = order_text.rstrip(", ")
         
-        # 디스코드 메시지 양식
+        # 요청사항이 있으면 텍스트 추가, 없으면 빈칸
+        req_text_for_discord = f"**📝 요청사항:** {request_msg}\n" if request_msg else ""
+        
         order_message = (
             f"📢 **[태둥포스 새 주문]**\n"
             f"━━━━━━━━━━━━━━\n"
             f"🧾 **주문 내역**\n"
             f"{final_order_text}\n\n"
             f"💰 **결제 금액: {total_price}원**\n"
-            f"━━━━━━━━━━━━━━"
+            f"━━━━━━━━━━━━━━\n"
+            f"{req_text_for_discord}" # 여기에 요청사항이 들어갑니다
         )
         
         with st.spinner("주방으로 주문 넣는 중..."):
             result = send_discord_message(order_message)
         
         if result == "성공":
-            # 1. 풍선 날리기 🎈
             st.balloons()
-            
-            # 2. 성공 메시지 (녹색 상자)
             st.success("주문이 완료되었습니다! (디스코드 알림 전송됨)")
-            
-            # 3. 장바구니 데이터는 비우지만, 화면은 바로 새로고침하지 않음
-            st.session_state['cart'] = [] 
-            
-            # ❌ st.rerun() <--- 이 코드를 삭제했습니다! 
-            # 이제 풍선과 메시지가 사라지지 않고 계속 보입니다.
-            
+            st.session_state['cart'] = []
+            # st.rerun()은 지웠으므로 장바구니 리셋 후 바로 새로고침되지 않음
         else:
             st.error(f"주문 실패: {result}")
             
-    # 비우기 버튼 (이건 누르면 바로 지워져야 하니 rerun 유지)
     if st.button("장바구니 비우기"):
         st.session_state['cart'] = []
         st.rerun()
 
 else:
     st.info("아직 담은 메뉴가 없습니다.")
+
+# 7. 특별 주문 및 호출
+st.divider()
+st.subheader("💡 특별 주문 & 호출")
+st.write("메뉴에 없는 음식이나, 주방장 호출이 필요할 때 편하게 메시지를 남겨주세요!")
+
+# 👇 [추가 2] 특별 호출용 여러 줄 입력칸
+special_request = st.text_area("어떤 것이 필요하신가요?", placeholder="예: 시원한 물 한 잔만 가져다주세요! / 메뉴에 없는 짜파구리 가능한가요?", height=100)
+
+if st.button("🔔 특별 메시지 전송"):
+    if special_request.strip() == "":
+        st.warning("내용을 입력해주세요.")
+    else:
+        special_message = (
+            f"🔔 **[태둥포스 특별 호출]**\n"
+            f"━━━━━━━━━━━━━━\n"
+            f"💬 **요청 내용:**\n"
+            f"{special_request}\n"
+            f"━━━━━━━━━━━━━━"
+        )
+        with st.spinner("주방에 메시지 전달 중..."):
+            result = send_discord_message(special_message)
+        
+        if result == "성공":
+            st.success("✨ 특별 요청이 주방에 전달되었습니다!")
+        else:
+            st.error(f"전송 실패: {result}")
